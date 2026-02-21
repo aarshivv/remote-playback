@@ -71,17 +71,31 @@ let currentPreset: ResolutionPreset =
 // Save originals before overriding
 const origGetBoundingClientRect = Element.prototype.getBoundingClientRect;
 
+// Save real viewport dimensions before any spoofing (needed for zoom calculation)
+const realInnerWidth = window.innerWidth;
+const realInnerHeight = window.innerHeight;
+
+/**
+ * Apply resolution overrides.
+ *
+ * Spoofs all dimensions (screen, viewport, video element) to the preset so
+ * YouTube TV renders a full TV-style layout for that resolution. Then applies
+ * CSS zoom to scale the page down to fit the actual browser viewport.
+ */
 function applyResolutionOverrides(preset: ResolutionPreset) {
-  // Screen object — affects quality cap decisions
+  // Screen object — affects quality cap and layout density
   Object.defineProperty(window.screen, "width",       { get: () => preset.width,  configurable: true });
   Object.defineProperty(window.screen, "height",      { get: () => preset.height, configurable: true });
   Object.defineProperty(window.screen, "availWidth",   { get: () => preset.width,  configurable: true });
   Object.defineProperty(window.screen, "availHeight",  { get: () => preset.height, configurable: true });
 
-  // NOTE: We intentionally do NOT spoof innerWidth/innerHeight/outerWidth/outerHeight.
-  // YouTube TV uses those for page layout. Spoofing them causes the UI to render at
-  // the target resolution (e.g. 4K) while the actual viewport is smaller, resulting
-  // in a zoomed-in/cropped view. Layout must use the real viewport dimensions.
+  // Viewport dimensions — YouTube TV uses these for page layout.
+  // We spoof them to match screen so the TV UI renders at full preset size,
+  // then CSS zoom scales it down to fit the real viewport.
+  Object.defineProperty(window, "innerWidth",  { get: () => preset.width,  configurable: true });
+  Object.defineProperty(window, "innerHeight", { get: () => preset.height, configurable: true });
+  Object.defineProperty(window, "outerWidth",  { get: () => preset.width,  configurable: true });
+  Object.defineProperty(window, "outerHeight", { get: () => preset.height, configurable: true });
 
   // Device pixel ratio
   Object.defineProperty(window, "devicePixelRatio", {
@@ -110,8 +124,14 @@ function applyResolutionOverrides(preset: ResolutionPreset) {
     return rect;
   };
 
+  // CSS zoom — scale the TV UI down to fit the real viewport.
+  // YouTube TV renders layout for the spoofed innerWidth (e.g. 3840px),
+  // zoom compensates so everything fits in the real viewport.
+  const zoomLevel = realInnerWidth / preset.width;
+  document.documentElement.style.zoom = String(zoomLevel);
+
   console.log(
-    `[RP] Resolution quality target: ${preset.width}x${preset.height} (DPR: ${preset.devicePixelRatio})`,
+    `[RP] Resolution: ${preset.width}x${preset.height}, zoom: ${zoomLevel.toFixed(3)}`,
   );
 }
 
