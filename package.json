@@ -1,0 +1,11 @@
+{
+  "name": "remote-playback",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=packages/extension",
+    "build:extension": "npm run build --workspace=packages/extension"
+  }
+}

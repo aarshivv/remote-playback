@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "RemotePlayback",
+  "version": "1.0.0",
+  "description": "Turn your browser into a YouTube TV cast receiver",
+  "permissions": ["declarativeNetRequest", "scripting", "storage", "activeTab"],
+  "host_permissions": ["https://www.youtube.com/tv*"],
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "RemotePlayback",
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "minimum_chrome_version": "116"
+}
