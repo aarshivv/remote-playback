@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "RemotePlayback",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Turn your browser into a YouTube TV cast receiver",
   "permissions": ["declarativeNetRequest", "scripting", "storage", "activeTab"],
   "host_permissions": ["https://www.youtube.com/tv*"],
