@@ -46,12 +46,14 @@ fullscreenBtn.addEventListener("click", async () => {
   await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: () => {
+      // Both reject if the page has no user activation. Swallow it rather than
+      // leaving an unhandled rejection in the tab's console.
       if (document.fullscreenElement) {
-        document.exitFullscreen();
-      } else {
-        document.documentElement.requestFullscreen();
+        return document.exitFullscreen().catch(() => {});
       }
+      return document.documentElement.requestFullscreen().catch(() => {});
     },
   });
+
   window.close();
 });

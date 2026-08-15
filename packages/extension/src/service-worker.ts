@@ -73,26 +73,41 @@ async function enableTvMode() {
     removeRuleIds: [UA_RULE_ID, STALE_REDIRECT_RULE_ID],
   });
 
-  // Register content scripts (bridge must run before main-world)
+  // Register content scripts (bridge must run before main-world).
+  // Registrations persist across sessions, so re-registering on every service
+  // worker wake would throw "Duplicate script ID" without the unregister first.
   await chrome.scripting
     .unregisterContentScripts({ ids: [CONTENT_BRIDGE_SCRIPT_ID, MAIN_WORLD_SCRIPT_ID] })
     .catch(() => {});
-  await chrome.scripting.registerContentScripts([
-    {
-      id: CONTENT_BRIDGE_SCRIPT_ID,
-      matches: ["https://www.youtube.com/tv*"],
-      js: ["content-bridge.js"],
-      runAt: "document_start",
-      world: "ISOLATED",
-    },
-    {
-      id: MAIN_WORLD_SCRIPT_ID,
-      matches: ["https://www.youtube.com/tv*"],
-      js: ["main-world.js"],
-      runAt: "document_start",
-      world: "MAIN",
-    },
-  ]);
+  try {
+    await chrome.scripting.registerContentScripts([
+      {
+        id: CONTENT_BRIDGE_SCRIPT_ID,
+        matches: ["https://www.youtube.com/tv*"],
+        js: ["content-bridge.js"],
+        runAt: "document_start",
+        world: "ISOLATED",
+      },
+      {
+        id: MAIN_WORLD_SCRIPT_ID,
+        matches: ["https://www.youtube.com/tv*"],
+        js: ["main-world.js"],
+        runAt: "document_start",
+        world: "MAIN",
+      },
+    ]);
+  } catch (err) {
+    // Registration failed, so the page overrides will not run. Say so on the
+    // badge — a "TV" badge here would claim a working state that doesn't exist,
+    // leaving the user with no signal at all.
+    console.error("[RP SW] Failed to register content scripts", err);
+    chrome.action.setBadgeText({ text: "ERR" });
+    chrome.action.setBadgeBackgroundColor({ color: "#AA6600" });
+    chrome.action.setTitle({
+      title: "RemotePlayback: failed to start — toggle TV Mode off and on",
+    });
+    return;
+  }
 
   // Update badge
   chrome.action.setBadgeText({ text: "TV" });
